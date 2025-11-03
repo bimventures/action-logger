@@ -15,7 +15,7 @@ BIM ActionLogger is a powerful Laravel package that extends Spatie's Activity Lo
 You can install the package via composer:
 
 ```bash
-composer require bim/action-logger
+composer require bimventures/action-logger
 ```
 
 After installing, publish the configuration file:
