@@ -1,5 +1,5 @@
 {
-    "name": "ahmed-bally/action-logger",
+    "name": "bimventures/action-logger",
     "description": "A Laravel package for managing action logging with support for CRUD operations, custom actions, and translations.",
     "type": "library",
     "license": "MIT",
