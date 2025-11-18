@@ -4,6 +4,7 @@ namespace BIM\ActionLogger\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use BIM\ActionLogger\Facades\ActionLogger;
 use Spatie\Activitylog\Models\Activity;
@@ -72,11 +73,9 @@ class AutoBatchLoggingMiddleware
             return ['sensitive_data' => true];
         }
 
-        // Get request data excluding sensitive fields
-        $requestData = $request->except(['password', 'password_confirmation', 'token']);
-
-        // Filter out uploaded files to prevent serialization errors
-        return $this->filterUploadedFiles($requestData);
+        // Get input data (excludes files automatically) and filter out sensitive fields
+        // Using input() instead of all() to avoid including UploadedFile instances
+        return Arr::except($request->input(), ['password', 'password_confirmation', 'token']);
     }
     
     /**
@@ -96,35 +95,6 @@ class AutoBatchLoggingMiddleware
         }
 
         return false;
-    }
-
-    /**
-     * Filter uploaded files from request data.
-     *
-     * Replaces UploadedFile instances with safe metadata to prevent
-     * serialization errors when temporary files are deleted.
-     *
-     * @param  array  $data
-     * @return array
-     */
-    protected function filterUploadedFiles(array $data): array
-    {
-        foreach ($data as $key => $value) {
-            if ($value instanceof \Symfony\Component\HttpFoundation\File\UploadedFile) {
-                // Replace file object with metadata
-                $data[$key] = [
-                    'uploaded_file' => true,
-                    'original_name' => $value->getClientOriginalName(),
-                    'size' => $value->getSize(),
-                    'mime_type' => $value->getMimeType(),
-                ];
-            } elseif (is_array($value)) {
-                // Recursively handle nested arrays (for multiple file uploads)
-                $data[$key] = $this->filterUploadedFiles($value);
-            }
-        }
-
-        return $data;
     }
 
     /**
