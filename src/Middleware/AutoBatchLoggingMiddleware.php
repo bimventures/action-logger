@@ -71,9 +71,12 @@ class AutoBatchLoggingMiddleware
         if ($this->containsSensitiveData($request)) {
             return ['sensitive_data' => true];
         }
-        
-        // Return safe request data
-        return $request->except(['password', 'password_confirmation', 'token']);
+
+        // Get request data excluding sensitive fields
+        $requestData = $request->except(['password', 'password_confirmation', 'token']);
+
+        // Filter out uploaded files to prevent serialization errors
+        return $this->filterUploadedFiles($requestData);
     }
     
     /**
@@ -85,16 +88,45 @@ class AutoBatchLoggingMiddleware
     protected function containsSensitiveData(Request $request): bool
     {
         $sensitiveRoutes = config('action-logger.sensitive_routes', []);
-        
+
         foreach ($sensitiveRoutes as $pattern) {
             if (Str::is($pattern, $request->path())) {
                 return true;
             }
         }
-        
+
         return false;
     }
-    
+
+    /**
+     * Filter uploaded files from request data.
+     *
+     * Replaces UploadedFile instances with safe metadata to prevent
+     * serialization errors when temporary files are deleted.
+     *
+     * @param  array  $data
+     * @return array
+     */
+    protected function filterUploadedFiles(array $data): array
+    {
+        foreach ($data as $key => $value) {
+            if ($value instanceof \Symfony\Component\HttpFoundation\File\UploadedFile) {
+                // Replace file object with metadata
+                $data[$key] = [
+                    'uploaded_file' => true,
+                    'original_name' => $value->getClientOriginalName(),
+                    'size' => $value->getSize(),
+                    'mime_type' => $value->getMimeType(),
+                ];
+            } elseif (is_array($value)) {
+                // Recursively handle nested arrays (for multiple file uploads)
+                $data[$key] = $this->filterUploadedFiles($value);
+            }
+        }
+
+        return $data;
+    }
+
     /**
      * Get response data for tracking.
      *
