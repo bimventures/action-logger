@@ -32,7 +32,7 @@ if (! function_exists('log_action')) {
     function log_action(
         Model|array|Collection $subjects,
         ActionInterface $action,
-        Model $causer = null,
+        ?Model $causer = null,
         array $properties = [],
         ?string $logName = null
     ): void {
